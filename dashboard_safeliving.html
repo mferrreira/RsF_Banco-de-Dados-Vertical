@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>SafeLiving — Gestão de Propriedades e Segurança Global</title>
+<style>
+  :root {
+    --bg: #0D1B2A;
+    --bg-panel: #14283D;
+    --linha: #24405C;
+    --texto: #DCE6F0;
+    --texto-suave: #8FA6BE;
+    --ambar: #E3A008;
+    --ciano: #22B8CF;
+    --vermelho: #E0563F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--texto);
+    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+    margin: 0;
+    padding: 40px 24px 80px;
+  }
+  .mono { font-family: 'Consolas', 'SF Mono', monospace; }
+  .container { max-width: 940px; margin: 0 auto; }
+  header h1 { font-size: 26px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  header p { color: var(--texto-suave); margin: 0 0 32px; font-size: 15px; }
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--linha);
+    border: 1px solid var(--linha);
+    margin-bottom: 40px;
+  }
+  .kpi { background: var(--bg-panel); padding: 20px; }
+  .kpi .numero { font-size: 30px; font-weight: 600; font-family: 'Consolas', 'SF Mono', monospace; }
+  .kpi .rotulo { color: var(--texto-suave); font-size: 13px; margin-top: 4px; }
+  section { margin-bottom: 40px; }
+  section h2 {
+    font-size: 15px; font-weight: 600; color: var(--texto-suave);
+    border-bottom: 1px solid var(--linha); padding-bottom: 10px; margin-bottom: 16px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: var(--texto-suave); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--linha); font-size: 12px; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--linha); }
+  .tag { padding: 3px 8px; font-size: 12px; border: 1px solid; }
+  .tag-ok { color: var(--ciano); border-color: var(--ciano); }
+  .tag-alerta { color: var(--vermelho); border-color: var(--vermelho); }
+  .tag-normal { color: var(--texto-suave); border-color: var(--linha); }
+  .linha-barra { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .rotulo-barra { width: 260px; font-size: 12px; color: var(--texto-suave); flex-shrink: 0; }
+  .trilha-barra { flex: 1; background: var(--bg-panel); height: 10px; }
+  .barra { background: var(--ambar); height: 100%; }
+  .valor-barra { width: 24px; text-align: right; font-size: 13px; }
+  .lista-ajustes { list-style: none; padding: 0; margin: 0; font-size: 14px; line-height: 2; }
+  .lista-ajustes li { border-bottom: 1px solid var(--linha); padding: 10px 0; }
+  .texto-vazio { color: var(--texto-suave); font-size: 14px; }
+  footer { color: var(--texto-suave); font-size: 12px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>SafeLiving — Gestão de Propriedades e Segurança Global</h1>
+    <p>Gerado automaticamente pela Cloud ao final da simulação · 04/09/2026 09:07:35</p>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi"><div class="numero">8</div><div class="rotulo">relatórios recebidos</div></div>
+    <div class="kpi"><div class="numero">2</div><div class="rotulo">bairros monitorados</div></div>
+    <div class="kpi"><div class="numero">4</div><div class="rotulo">acessos validados</div></div>
+    <div class="kpi"><div class="numero">1</div><div class="rotulo">acessos não confirmados</div></div>
+  </div>
+
+  <section>
+    <h2>Linha do tempo de eventos (mais recente primeiro)</h2>
+    <table>
+      <thead><tr><th>Hora</th><th>Bairro</th><th>Status</th><th>Casa (placa)</th><th>Eventos de energia</th></tr></thead>
+      <tbody><tr>
+                  <td class="mono">09:07:35</td>
+                  <td>bloco-B</td>
+                  <td><span class="tag tag-normal">TELEMETRIA_ROTINA</span></td>
+                  <td class="mono">—</td>
+                  <td class="mono">1</td>
+                </tr>
+<tr>
+                  <td class="mono">09:07:35</td>
+                  <td>bloco-B</td>
+                  <td><span class="tag tag-normal">TELEMETRIA_ROTINA</span></td>
+                  <td class="mono">—</td>
+                  <td class="mono">1</td>
+                </tr>
+<tr>
+                  <td class="mono">09:07:35</td>
+                  <td>bloco-A</td>
+                  <td><span class="tag tag-alerta">ACESSO_NAO_CONFIRMADO</span></td>
+                  <td class="mono">#88 (HHH0099)</td>
+                  <td class="mono">1</td>
+                </tr>
+<tr>
+                  <td class="mono">09:07:35</td>
+                  <td>bloco-A</td>
+                  <td><span class="tag tag-ok">ACESSO_VALIDADO_REGIONALMENTE</span></td>
+                  <td class="mono">#104 (ABC1D23)</td>
+                  <td class="mono">0</td>
+                </tr>
+<tr>
+                  <td class="mono">09:07:35</td>
+                  <td>bloco-B</td>
+                  <td><span class="tag tag-ok">ACESSO_VALIDADO_REGIONALMENTE</span></td>
+                  <td class="mono">#150 (QRT4L56)</td>
+                  <td class="mono">1</td>
+                </tr>
+<tr>
+                  <td class="mono">09:07:34</td>
+                  <td>bloco-A</td>
+                  <td><span class="tag tag-ok">ACESSO_VALIDADO_REGIONALMENTE</span></td>
+                  <td class="mono">#207 (XYZ9K88)</td>
+                  <td class="mono">1</td>
+                </tr>
+<tr>
+                  <td class="mono">09:07:34</td>
+                  <td>bloco-A</td>
+                  <td><span class="tag tag-ok">ACESSO_VALIDADO_REGIONALMENTE</span></td>
+                  <td class="mono">#104 (ABC1D23)</td>
+                  <td class="mono">2</td>
+                </tr>
+<tr>
+                  <td class="mono">09:07:34</td>
+                  <td>bloco-A</td>
+                  <td><span class="tag tag-normal">TELEMETRIA_ROTINA</span></td>
+                  <td class="mono">—</td>
+                  <td class="mono">1</td>
+                </tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Distribuição de status recebidos</h2>
+    <div class="linha-barra">
+                  <span class="rotulo-barra mono">ACESSO_VALIDADO_REGIONALMENTE</span>
+                  <div class="trilha-barra"><div class="barra" style="width:100%"></div></div>
+                  <span class="valor-barra mono">4</span>
+                </div>
+<div class="linha-barra">
+                  <span class="rotulo-barra mono">TELEMETRIA_ROTINA</span>
+                  <div class="trilha-barra"><div class="barra" style="width:75%"></div></div>
+                  <span class="valor-barra mono">3</span>
+                </div>
+<div class="linha-barra">
+                  <span class="rotulo-barra mono">ACESSO_NAO_CONFIRMADO</span>
+                  <div class="trilha-barra"><div class="barra" style="width:25%"></div></div>
+                  <span class="valor-barra mono">1</span>
+                </div>
+  </section>
+
+  <section>
+    <h2>Modelo de visão computacional — o que a Cloud aprendeu</h2>
+    <ul class='lista-ajustes'><li><span class='mono'>09:07:35</span> — modelo de visão atualizado para a versão <strong>1.1</strong> · 3 placas usadas no re-treino · aplicado a 5 gateway(s) Edge e 2 nó(s) de Fog</li></ul>
+  </section>
+
+  <footer>Dados fictícios gerados para fins didáticos — simulador SafeLiving Edge/Fog/Cloud.</footer>
+</div>
+</body>
+</html>

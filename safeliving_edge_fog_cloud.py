@@ -121,12 +121,37 @@ class CasaInteligente:
     ABSTRAÇÃO: envia à Fog só o evento de acesso (casa + placa + hora),
                nunca o vídeo bruto da câmera.
     """
-
     def __init__(self, casa_numero, bairro_id, dispositivos):
         self.casa_numero = casa_numero
         self.bairro_id = bairro_id
         self.dispositivos = dispositivos
         self.versao_software = 1.0
+        # Banco SQLite local da Edge (um por casa)
+        self.db_edge = sqlite3.connect(f"db_edge_casa-{casa_numero}.db")
+        self._criar_tabelas_edge()
+
+    def _criar_tabelas_edge(self):
+        with self.db_edge:
+            self.db_edge.execute(
+                "CREATE TABLE IF NOT EXISTS acessos (" \
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," \
+                "placa TEXT," \
+                "status TEXT," \
+                "hora TEXT)"
+            )
+            self.db_edge.execute(
+                "CREATE TABLE IF NOT EXISTS telemetria (" \
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," \
+                "valor_kwh REAL," \
+                "hora TEXT)"
+            )
+            self.db_edge.execute(
+                "CREATE TABLE IF NOT EXISTS firmware (" \
+                "versao REAL)"
+            )
+            self.db_edge.execute("INSERT OR IGNORE INTO firmware (versao) VALUES (1.0)")
+
+
 
     # ---------------- REGRA DE PROCESSAMENTO NA CASA (fusão câmera + presença) ----------------
     def processar(self, leituras):
@@ -172,16 +197,36 @@ class CasaInteligente:
         if tipo_evento == "ACESSO_VEICULO_AUTORIZADO":
             time.sleep(LATENCIA_CASA_PARA_5G_SEG)
             eventos.append(self.abstrair_acesso(placa, leituras["camera_garagem"]["hora"]))
+            self._salvar_acesso(placa, leituras["camera_garagem"]["hora"])
 
         if random.random() < 0.3:  # telemetria de energia é enviada só ocasionalmente
             time.sleep(LATENCIA_CASA_PARA_5G_SEG)
             eventos.append(self.abstrair_telemetria(leituras["medidor_energia"]))
+            self._salvar_telemetria(leituras["medidor_energia"])
         # --------------------------------------------------------------------------
         return eventos
+
+    # ---------------- PERSISTÊNCIA LOCAL DA EDGE ----------------
+    def _salvar_acesso(self, placa, hora):
+        with self.db_edge:
+            self.db_edge.execute(
+                "INSERT INTO acessos (placa, status, hora) VALUES (?,?,?)",
+                (placa, "AUTORIZADO", hora),
+            )
+
+    def _salvar_telemetria(self, leitura_energia):
+        with self.db_edge:
+            self.db_edge.execute(
+                "INSERT INTO telemetria (valor_kwh, hora) VALUES (?,?)",
+                (leitura_energia["valor"], leitura_energia["hora"]),
+            )
+    # --------------------------------------------------------------------------
 
     # ---------------- A CLOUD PODE ATUALIZAR O SOFTWARE DESTE GATEWAY ----------------
     def receber_atualizacao_software(self, nova_versao):
         self.versao_software = nova_versao
+        with self.db_edge:
+            self.db_edge.execute("UPDATE firmware SET versao = ?", (nova_versao,))
         print(f"    [CASA #{self.casa_numero}] gateway atualizado para a versão "
               f"{nova_versao:.1f} do modelo de visão computacional.")
     # ------------------------------------------------------------------------------------------

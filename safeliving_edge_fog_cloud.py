@@ -37,6 +37,7 @@ import random
 import time
 import os
 import webbrowser
+import sqlite3
 from datetime import datetime
 from collections import Counter
 
@@ -205,6 +206,32 @@ class EstacaoORAN:
         self.versao_software = 1.0
         self.buffer = []
 
+        #Criando banco de dados
+        self.db = sqlite3.connect(f"db_fog_bairro-{bairro_id}.db")
+        self.criar_tabelas()
+        
+
+    def criar_tabelas(self):
+        with self.db:
+            #Criando a tabela do log de eventos dos carros que entraram
+            self.db.execute(
+                "CREATE TABLE IF NOT EXISTS eventos (" \
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," \
+                "casaNumero INTEGER," \
+                "placa TEXT," \
+                "status TEXT," \
+                "hora TEXT" \
+                ")"
+            )
+            #Criando a tabela contendo o status do serviço público (iluminação pública)
+            self.db.execute("" \
+            "CREATE TABLE IF NOT EXISTS status_servico(" \
+            "servico TEXT PRIMARY KEY," \
+            "status TEXT" \
+            ")")
+            #Inicializando O serviço público de luzes como OFF sem repetir
+            self.db.execute("INSERT OR IGNORE INTO status_servico (servico, status) VALUES ('iluminacao_publica', 'OFF')")
+
     def receber(self, eventos_da_casa):
         self.buffer.extend(eventos_da_casa)
 
@@ -214,8 +241,28 @@ class EstacaoORAN:
               f"da quadra priorizado na OpenRAN.")
 
     def acionar_iluminacao_publica(self, bairro_id):
-        print(f"    [FOG {bairro_id}] painéis de iluminação pública acionados ao "
+        #Verificando o estado atual da iluminação pública daquele bairro
+        cursor_fog = self.db.cursor()
+        #Buscando no banco de dados o estado atual da iluminação pública e colocando o cursor na tupla do estado atual
+        cursor_fog.execute("SELECT status FROM status_servico WHERE servico = 'iluminacao_publica'")
+
+        #Armazenando o valor do estado que está na primeira (0) posição do cursor_fog
+        status_iluminacao_publica = cursor_fog.fetchone()[0]
+
+        #Alterando as luzes à depender do estado atual
+        if status_iluminacao_publica == "OFF":
+            print(f"    [FOG {bairro_id}] painéis de iluminação pública acionados ao "
               f"longo do trajeto até a garagem.")
+            #Alterando o estado atual no banco de dados
+            with self.db:
+                self.db.execute("UPDATE status_servico SET status = 'ON' WHERE servico = 'iluminacao_publica'")
+        else:
+            print(f"    [FOG {bairro_id}] Identificou que as luzes já estão ligadas!")
+
+    def db_salvar_evento(self, casa_numero, placa, status, hora):
+        with self.db:
+            self.db.execute("INSERT INTO eventos (casaNumero, placa, status, hora) VALUES " \
+            "(?,?,?,?)", (casa_numero, placa, status, hora))
     # --------------------------------------------------------------------------------
 
     # ---------------- REGRA DE PROCESSAMENTO NA FOG (xApp / Near-RT RIC) ----------------
@@ -229,6 +276,10 @@ class EstacaoORAN:
                 confirmado = (self.bairro_id, e["placa"], ciclo_atual) in PLACAS_CONFIRMADAS_TRANSITO_PUBLICO
                 alvo = acessos_validados if confirmado else acessos_nao_confirmados
                 alvo.append({"casa_numero": e["casa_numero"], "placa": e["placa"]})
+
+                #Salvando o evento de acesso no banco de dados
+                status_acesso = "CONFIRMADO" if confirmado else "NÃO_CONFIRMADO"
+                self.db_salvar_evento(e["casa_numero"], e["placa"], status_acesso, e["hora"])
             elif e["tipo_evento"] == "TELEMETRIA_ENERGIA":
                 eventos_energia += 1
 

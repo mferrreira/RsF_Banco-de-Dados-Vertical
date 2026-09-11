@@ -378,11 +378,8 @@ class EstacaoORAN:
 class NucleoCentral:
     """
     TRANSMISSÃO: maior distância/latência, recebe eventos já consolidados.
-    PROCESSAMENTO: dispara integrações de alto nível (push, climatização,
-                   recarga do veículo) e re-treina o modelo de visão.
-    ABSTRAÇÃO: não vê o vídeo nem os frames — só o evento de acesso já
-               resolvido (casa, placa, horário), o suficiente para
-               personalizar o app do morador e alimentar o ML.
+    PROCESSAMENTO: dispara integrações de alto nível e re-treina o modelo.
+    ABSTRAÇÃO: consolida eventos para personalização e análise temporal.
     """
 
     def __init__(self, fog_nodes, casas):
@@ -392,13 +389,33 @@ class NucleoCentral:
         self.placas_para_retreino = []
         self.versao_modelo = 1.0
         self.ajustes_modelo = []
+        self.conn = sqlite3.connect("cloud.db")
+        self.cursor = self.conn.cursor()
+        self._criar_tabelas()
+
+    def _criar_tabelas(self):
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS historico_eventos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                hora TEXT,
+                bairro_id TEXT,
+                status_bloco TEXT,
+                eventos_energia INTEGER
+            )
+        """)
+        self.conn.commit()
 
     def registrar(self, relatorio_fog):
         self.historico.append(relatorio_fog)
+        self.cursor.execute("""
+            INSERT INTO historico_eventos (hora, bairro_id, status_bloco, eventos_energia)
+            VALUES (?, ?, ?, ?)
+        """, (relatorio_fog["hora"], relatorio_fog["bairro_id"], relatorio_fog["status_bloco"], relatorio_fog["eventos_energia"]))
+        self.conn.commit()
         print(f"  [CLOUD] evento consolidado registrado na base de dados temporal "
               f"(bairro {relatorio_fog['bairro_id']}, status {relatorio_fog['status_bloco']})")
 
-        # ---------------- REGRA DE PROCESSAMENTO NA CLOUD (integrações de alto nível) ----------------
+        # Processamento das ações da Cloud após registro do relatório
         for acesso in relatorio_fog["acessos_validados"]:
             casa = acesso["casa_numero"]
             print(f"  [CLOUD] notificação push enviada ao smartphone do morador da Casa #{casa}")
@@ -409,8 +426,41 @@ class NucleoCentral:
             self.placas_para_retreino.append(acesso)
             if len(self.placas_para_retreino) % LIMIAR_RETREINO_VISAO == 0:
                 self._retreinar_modelo_visao()
-        # --------------------------------------------------------------------------------------------------
-    # ------------------------------------------------------------------------------------------
+
+    def analisar_consumo_energia(self):
+        """Calcula volume total e alerta sobre a demanda de energia via SQLite."""
+        self.cursor.execute("""
+            SELECT bairro_id, SUM(eventos_energia) as total_leituras
+            FROM historico_eventos
+            GROUP BY bairro_id
+        """)
+        resultados = self.cursor.fetchall()
+        
+        print("\n--- [CLOUD] RELATÓRIO DE GESTÃO ENERGÉTICA ---")
+        if not resultados:
+            print("Nenhum registro de energia no banco de dados.")
+        for bairro, total in resultados:
+            print(f"Bairro: {bairro} | Total de telemetrias processadas: {total}")
+            if total and total > 5:
+                print(f"ALERTA CLOUD: Alta demanda energética no {bairro}. Sugestão: adiar recarga de veículos elétricos.")
+
+    def auditar_acessos_suspeitos(self):
+        """Filtra acessos não validados gravados no SQLite."""
+        self.cursor.execute("""
+            SELECT hora, bairro_id, status_bloco 
+            FROM historico_eventos 
+            WHERE status_bloco = 'ACESSO_NAO_CONFIRMADO'
+        """)
+        alertas = self.cursor.fetchall()
+        
+        print("\n--- [CLOUD] AUDITORIA DE SEGURANÇA E ACESSOS NEGADOS ---")
+        if not alertas:
+            print("Nenhuma anomalia ou acesso negado registrado até o momento.")
+        else:
+            for hora, bairro, status in alertas:
+                print(f"[ALERTA DE SEGURANÇA] Horário: {hora} | Bairro: {bairro} | Status: {status}")
+                # ------------------------------------------------------------------------------------------
+            # ------------------------------------------------------------------------------------------
 
     # ---------------- AÇÃO ROBUSTA DA CLOUD: ML + DEPLOY DE VOLTA PARA EDGE E FOG ----------------
     def _retreinar_modelo_visao(self):
@@ -602,6 +652,8 @@ class NucleoCentral:
   2 - Filtrar eventos por bairro
   3 - Filtrar eventos por casa
   4 - Ver as atualizações do modelo de visão computacional
+  5 - Analisar consumo de energia por bairro
+  6 - Auditar acessos suspeitos e não confirmados
   0 - Sair
   Escolha: """
 
@@ -645,6 +697,12 @@ class NucleoCentral:
                     print(f"   {a['hora']} | versão {a['versao']:.1f} | "
                           f"{a['amostras_usadas']} amostras | "
                           f"{a['gateways_atualizados']} gateways + {a['nos_fog_atualizados']} nós de Fog atualizados")
+
+            elif escolha == "5":
+                self.analisar_consumo_energia()
+
+            elif escolha == "6":
+                self.auditar_acessos_suspeitos()
 
             elif escolha == "0":
                 print("  Encerrando.")
